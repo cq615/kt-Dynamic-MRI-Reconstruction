@@ -2,7 +2,8 @@
 
 This is a reference implementation for the following work:
 
-[MICCAI'19] k-t NEXT: Dynamic MR Image Reconstruction Exploiting Spatio-Temporal Correlations. Paper link: https://arxiv.org/abs/1907.09425
+[MICCAI'19] k-t NEXT: Dynamic MR Image Reconstruction Exploiting Spatio-Temporal Correlations. 
+Paper link: https://arxiv.org/abs/1907.09425
 
 ## Usage
 
