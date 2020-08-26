@@ -7,6 +7,10 @@ Paper link: https://arxiv.org/abs/1907.09425
 
 ## Usage
 
+Usage::
+
+  python main_kt_NEXT.py --acceleration_factor 4
+  
 ## Citation and Acknowledgement
 
 If you use the code for your work, or if you found the code useful, please cite the following work.
