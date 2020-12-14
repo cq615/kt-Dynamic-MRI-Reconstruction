@@ -5,6 +5,8 @@ This is a reference implementation for the following work:
 [MICCAI'19] k-t NEXT: Dynamic MR Image Reconstruction Exploiting Spatio-Temporal Correlations. 
 Paper link: https://arxiv.org/abs/1907.09425
 
+[Pending] Complementary Time-Frequency Domain Network for Dynamic Parallel MR Image Reconstruction.
+
 ## Introduction
 
 Dynamic magnetic resonance imaging (MRI) exhibits high correlations in k-space and time. In order to accelerate the dynamic MR imaging and to exploit k-t correlations from highly undersampled data, here we develop a novel deep learning based approach for dynamic MR image reconstruction, termed k-t NEXT (k-t NEtwork with X-f Transform). In particular, we reconstruct the true signals from aliased signals in x-f domain to exploit the spatio-temporal redundancies. Building on that, the proposed method then learns to recover the signals by alternating the reconstruction process between the x-f space and image space in an iterative fashion. This enables the network to effectively capture useful information and jointly exploit spatio-temporal correlations from both complementary domains. 
