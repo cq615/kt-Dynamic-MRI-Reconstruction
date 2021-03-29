@@ -6,7 +6,7 @@ This is a reference implementation for the following work:
 
 Paper link: https://arxiv.org/abs/1907.09425
 
-[Pending] Complementary Time-Frequency Domain Network for Dynamic Parallel MR Image Reconstruction.
+[Under Review] Complementary Time-Frequency Domain Network for Dynamic Parallel MR Image Reconstruction.
 
 Paper link: https://arxiv.org/abs/2012.11974
 
