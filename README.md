@@ -20,11 +20,11 @@ This repository contains the implementation of k-t NEXT and CTFNet including the
 
 To train k-t NEXT on single-coil data:
 
-  python main_kt_NEXT.py --acceleration_factor 4
+    python main_kt_NEXT.py --acceleration_factor 4
   
 To train CTFNet on multi-coil data:
 
-  python main_CTFNet.py --acceleration_factor 8
+    python main_CTFNet.py --acceleration_factor 8
   
 ## Citation and Acknowledgement
 
