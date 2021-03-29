@@ -3,9 +3,11 @@
 This is a reference implementation for the following work:
 
 [MICCAI'19] k-t NEXT: Dynamic MR Image Reconstruction Exploiting Spatio-Temporal Correlations. 
+
 Paper link: https://arxiv.org/abs/1907.09425
 
 [Pending] Complementary Time-Frequency Domain Network for Dynamic Parallel MR Image Reconstruction.
+
 Paper link: https://arxiv.org/abs/2012.11974
 
 ## Introduction
@@ -17,9 +19,11 @@ This repository contains the implementation of k-t NEXT and CTFNet including the
 ## Usage
 
 To train k-t NEXT on single-coil data:
+
   python main_kt_NEXT.py --acceleration_factor 4
   
 To train CTFNet on multi-coil data:
+
   python main_CTFNet.py --acceleration_factor 8
   
 ## Citation and Acknowledgement
