@@ -58,6 +58,18 @@ def data_consistency(k, k0, mask, noise_lvl=None):
         out = (1 - mask) * k + mask * k0
     return out
 
+def complex_multiply(x, y, u, v):
+    """
+    Computes (x+iy) * (u+iv) = (x * u - y * v) + (x * v + y * u)i = z1 + iz2
+
+    Returns (real z1, imaginary z2)
+    """
+
+    z1 = x * u - y * v
+    z2 = x * v + y * u
+
+    return torch.stack((z1, z2), dim=-1)
+
 
 class DataConsistencyInKspace(nn.Module):
     """ Create data consistency operator
@@ -211,6 +223,38 @@ class BCRNNlayer(nn.Module):
 
         return output
 
+class CRNN_i(nn.Module):
+    """
+    Convolutional RNN cell that evolves over iterations
+
+    Parameters
+    -----------------
+    input: 4d tensor, shape (batch_size, channel, width, height)
+    hidden_iteration: hidden states in iteration dimension, 4d tensor, shape (batch_size, hidden_size, width, height)
+
+    Returns
+    -----------------
+    output: 4d tensor, shape (batch_size, hidden_size, width, height)
+
+    """
+    def __init__(self, input_size, hidden_size, kernel_size, dilation, iteration=False):
+        super(CRNN_i, self).__init__()
+        self.kernel_size = kernel_size
+        self.i2h = nn.Conv2d(input_size, hidden_size, kernel_size, padding=dilation, dilation=dilation)
+        # add iteration hidden connection
+        if iteration:
+            self.ih2ih = nn.Conv2d(hidden_size, hidden_size, kernel_size, padding=self.kernel_size // 2)
+        self.relu = nn.LeakyReLU(0.01, inplace=True)
+
+    def forward(self, input, hidden_iteration=None):
+        in_to_hid = self.i2h(input)
+        if hidden_iteration is not None:
+            ih_to_ih = self.ih2ih(hidden_iteration)
+            hidden = self.relu(in_to_hid + ih_to_ih)
+        else:
+            hidden = self.relu(in_to_hid)
+
+        return hidden
 
 class TransformDataInXfSpaceTA(nn.Module):
 
@@ -263,3 +307,94 @@ class TransformDataInXfSpaceTA(nn.Module):
 
         return x_f_diff, x_f_avg
 
+class TransformDataInXtSpaceTA_mc(nn.Module):
+
+    def __init__(self, divide_by_n=False, norm=True):
+        super(TransformDataInXtSpaceTA_mc, self).__init__()
+        self.normalized = norm
+        self.divide_by_n = divide_by_n
+
+    def forward(self, x, k0, mask, sensitivity):
+        return self.perform(x, k0, mask, sensitivity)
+
+    def perform(self, x, k0, mask, sensitivity):
+        """
+        compute temporal averaged frames with data consistency in multi-coil setting with sensitivity maps
+        :param x: input image with shape [nt, nx, ny, 2]
+        :param mask: undersampling mask [nt, ns, nx, ny, 2]
+        :param k0: undersampled k-space data [nt, ns, nx, ny, 2]
+        :param sensitivity: sensitivity maps [nt, ns, nx, ny, 2]
+        :return: temporal average frames
+        """
+
+        if self.divide_by_n:
+            x = complex_multiply(x[..., 0].unsqueeze(1), x[..., 1].unsqueeze(1),
+                                   sensitivity[..., 0], sensitivity[..., 1])
+            k = torch.fft(x, 2, normalized=self.normalized)
+            k_avg = torch.div(torch.sum(k, 0), k.shape[0])
+        else:
+            k_avg = torch.div(torch.sum(k0, 0), torch.clamp(torch.sum(mask, 0), min=1))
+
+        # data consistency for each frame
+        k_avg = k_avg.expand(x.shape[0], -1, -1, -1, -1)
+        k_avg = data_consistency(k_avg, k0, mask)
+
+        x_avg = torch.ifft(k_avg, 2, normalized=True)
+
+        Sx_avg = complex_multiply(x_avg[..., 0], x_avg[..., 1],
+                                sensitivity[..., 0],
+                                -sensitivity[..., 1]).sum(dim=1)
+        return Sx_avg
+
+class TransformDataInXfSpaceTA_mc(nn.Module):
+
+    def __init__(self, divide_by_n=False, norm=True):
+        super(TransformDataInXfSpaceTA_mc, self).__init__()
+        self.normalized = norm
+        self.divide_by_n = divide_by_n
+
+    def perform(self, x, k0, mask, sensitivity):
+        """
+        transform to x-f space with subtraction of average temporal frame in multi-coil setting
+        :param x: input image with shape [nt, nx, ny, 2]
+        :param mask: undersampling mask [nt, ns, nx, ny, 2]
+        :param k0: undersampled k-space data [nt, ns, nx, ny, 2]
+        :param sensitivity: sensitivity maps [nt, ns, nx, ny, 2]
+        :return: difference data; DC baseline
+        """
+
+        x = complex_multiply(x[..., 0].unsqueeze(1), x[..., 1].unsqueeze(1),
+                               sensitivity[..., 0], sensitivity[..., 1])
+        k = torch.fft(x, 2, normalized=self.normalized)
+        if self.divide_by_n:
+            k_avg = torch.div(torch.sum(k, 0), k.shape[0])
+        else:
+            k_avg = torch.div(torch.sum(k0, 0), torch.clamp(torch.sum(mask, 0), min=1))
+
+        ns, nx, ny, nc = k_avg.shape
+        k_avg = k_avg.view(1, ns, nx, ny, nc)
+        k_avg = k_avg.repeat(k.shape[0], 1, 1, 1, 1)
+
+        # subtract the temporal average frame
+        k_diff = torch.sub(k, k_avg)
+        x_diff = torch.ifft(k_diff, 2, normalized=self.normalized)
+        Sx_diff = complex_multiply(x_diff[..., 0], x_diff[..., 1],
+                                sensitivity[..., 0],
+                                -sensitivity[..., 1]).sum(dim=1) # [nt, nx, ny, 2]
+
+        # transform to x-f space to get the baseline
+        x_avg = torch.ifft(k_avg, 2, normalized=self.normalized)
+        Sx_avg = complex_multiply(x_avg[..., 0], x_avg[..., 1],
+                                sensitivity[..., 0],
+                                -sensitivity[..., 1]).sum(dim=1)
+
+        Sx_avg = Sx_avg.permute(1, 2, 0, 3)  # [nx, ny, nt, 2]
+        x_f_avg = fftshift_pytorch(torch.fft(ifftshift_pytorch(Sx_avg, axes=[-2]), 1, normalized=self.normalized), axes=[-2])
+        x_f_avg = x_f_avg.permute(2, 0, 1, 3)
+
+        # difference data
+        Sx_diff = Sx_diff.permute(1, 2, 0, 3)  # [nx, ny, nt, 2]
+        x_f_diff = fftshift_pytorch(torch.fft(ifftshift_pytorch(Sx_diff, axes=[-2]), 1, normalized=self.normalized), axes=[-2])
+        x_f_diff = x_f_diff.permute(2, 0, 1, 3)
+
+        return x_f_diff, x_f_avg
