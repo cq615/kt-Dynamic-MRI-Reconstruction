@@ -6,7 +6,7 @@ This is a reference implementation for the following work:
 
 Paper link: https://arxiv.org/abs/1907.09425
 
-[Under Review] Complementary Time-Frequency Domain Network for Dynamic Parallel MR Image Reconstruction.
+[MRM'21] Complementary Time-Frequency Domain Network for Dynamic Parallel MR Image Reconstruction.
 
 Paper link: https://arxiv.org/abs/2012.11974
 
@@ -32,7 +32,7 @@ If you use the code for your work, or if you found the code useful, please cite 
 
 Qin C, et al. (2019) k-t NEXT: Dynamic MR Image Reconstruction Exploiting Spatio-Temporal Correlations. In: Shen D. et al. (eds) Medical Image Computing and Computer Assisted Intervention – MICCAI 2019. MICCAI 2019. Lecture Notes in Computer Science, vol 11765. Springer, Cham. https://doi.org/10.1007/978-3-030-32245-8_56
 
-Qin C, et al. (2020) "Complementary Time-Frequency Domain Networks for Dynamic Parallel MR Image Reconstruction." arXiv preprint arXiv:2012.11974.
+Qin C, et al. (2021) "Complementary Time-Frequency Domain Networks for Dynamic Parallel MR Image Reconstruction." Magnetic Resonance in Medicine.
 
 If you use the CRNN-MRI module, please also cite:
 
